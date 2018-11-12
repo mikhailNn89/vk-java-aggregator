@@ -21,3 +21,17 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+# Not for the repository
+src/main/resources/config.properties
+src/main/java/Main.java
+src/main/java/BotRequestHandler.java
+src/main/java/RequestHandler.java
+.gradle
+.idea
+gradle
+out
+gradlew
+gradlew.bat
+vk-java-aggregator.iml
+
