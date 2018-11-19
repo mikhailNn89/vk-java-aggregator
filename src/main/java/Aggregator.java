@@ -1,10 +1,14 @@
 import com.vk.api.sdk.client.VkApiClient;
 import com.vk.api.sdk.client.actors.UserActor;
+import com.vk.api.sdk.objects.photos.Photo;
 import com.vk.api.sdk.objects.photos.PhotoAlbumFull;
 import com.vk.api.sdk.objects.photos.PhotoFull;
 import com.vk.api.sdk.objects.photos.PhotoUpload;
 import com.vk.api.sdk.objects.utils.DomainResolved;
+import com.vk.api.sdk.objects.wall.WallPostFull;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Aggregator {
@@ -30,25 +34,56 @@ public class Aggregator {
         return id;
     }
 
+    private PhotoAlbumFull getAlbumByTitle(int myGroupId, String title) throws Exception {
+        List<PhotoAlbumFull> list = photoHandler.getAlbums(myGroupId);
+        for (PhotoAlbumFull a : list) {
+            if (a.getTitle().compareToIgnoreCase(title) == 0) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    private PhotoAlbumFull getMainAlbum(int myGroupId) throws Exception {
+        return getAlbumByTitle(myGroupId, "Для загрузки");
+    }
+
+    private PhotoAlbumFull getDelAlbum(int myGroupId) throws Exception {
+        return getAlbumByTitle(myGroupId, "Удаленные");
+    }
+
     public void aggregateGroups() throws Exception {
-        int id = -26493942;
-        int count = 0;
+        //int id = -26493942;
+        int id = -25714310;
 
-        photoHandler.deleteAllPhoto(myGroupId);
-        wallHandler.clearWall(myGroupId);
+        List<PhotoAlbumFull> albumList = new ArrayList<>();
+        albumList.add(getMainAlbum(myGroupId));
+        albumList.add(getDelAlbum(myGroupId));
 
-        List<PhotoAlbumFull> albumList = photoHandler.getAlbums(myGroupId);
         int albumId = albumList.get(0).getId();
         PhotoUpload photoUpload = photoHandler.getUploadServer(myGroupId, albumId);
 
-        List<PhotoFull> photoList1 = photoHandler.getAllSorted(id);
-        List<PhotoFull> photoList2 = photoList1.subList(0,1);
-        photoHandler.sortPhotoRev(photoList2);
-        photoHandler.uploadPhotoList(photoList2, myGroupId, albumId, photoUpload);
+        photoHandler.deleteAlbumPhoto(albumList.get(0));
+        Thread.sleep(500);
+        List<PhotoFull> photoList3 = photoHandler.getAllSorted(id);
 
+        List<PhotoFull> photoList4 = photoList3.subList(0,10);
+        Collections.reverse(photoList4);
+
+        List<Photo> lp = photoHandler.uploadPhotoList(photoList4, albumList.get(0), photoUpload, photoList4.get(photoList4.size()-1));
+        photoHandler.movePhotoList(lp, albumList.get(1));
         photoHandler.deleteAllPhoto(myGroupId);
 
-        int y = 7;
+
+
+        wallHandler.clearWall(myGroupId);
+        List<WallPostFull> list33 = wallHandler.getExtended2(id);
+        List<WallPostFull> list44 = list33.subList(0,1);
+        Collections.reverse(list44);
+
+        wallHandler.repostList(list44, myGroupId);
+        wallHandler.clearWall(myGroupId);
+
     }
 
 }
