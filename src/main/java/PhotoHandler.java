@@ -20,8 +20,9 @@ import java.util.List;
 public class PhotoHandler {
     private VkApiClient apiClient;
     private UserActor userActor;
-    private static final int maxPhotoNum = 20000;
-    private static final int maxAlbumNum = 50;
+    private static final int maxPhotoNum1 = 1000;
+    private static final int maxPhotoNum2 = 2000;
+    private static final int maxAlbumNum = 30;
 
     PhotoHandler(VkApiClient apiClient, UserActor userActor) {
         this.apiClient = apiClient;
@@ -41,6 +42,25 @@ public class PhotoHandler {
         OkResponse ok = apiClient.photos().delete(userActor, photo.getId()).ownerId(photo.getOwnerId()).execute();
     }
 
+    private void clearAlbumByDelete(PhotoAlbumFull album) throws Exception {
+        OkResponse ok = apiClient.
+                         photos().
+      deleteAlbum(userActor, album.getId()).
+      groupId(abs(album.getOwnerId())).
+                        execute();
+        Thread.sleep(200);
+        PhotoAlbumFull albumNew = apiClient.
+                                   photos().
+   createAlbum(userActor, album.getTitle()).
+                groupId(abs(album.getOwnerId())).
+                            description("").
+                         privacyView("all").
+                      privacyComment("all").
+                   uploadByAdminsOnly(true).
+                     commentsDisabled(true).
+                                  execute();
+    }
+
     private void makeCover(int ownerId, int albumId, int photoId) throws Exception {
         OkResponse ok = apiClient.photos().makeCover(userActor, photoId).ownerId(ownerId).albumId(albumId).execute();
     }
@@ -48,7 +68,7 @@ public class PhotoHandler {
     public void movePhotoList(List<Photo> list, PhotoAlbumFull album) throws Exception {
         for (Photo p : list) {
             OkResponse ok = apiClient.photos().move(userActor, album.getId(), p.getId()).ownerId(p.getOwnerId()).execute();
-            Thread.sleep(250);
+            Thread.sleep(300);
         }
     }
 
@@ -56,7 +76,7 @@ public class PhotoHandler {
         int ownerId = album.getOwnerId();
         String albumId = album.getId().toString();
         int offsetPhoto = 0, countPhoto = 1000;
-        int numIter = divCeil(maxPhotoNum, countPhoto), countIter = 0;
+        int numIter = divCeil(maxPhotoNum1, countPhoto), countIter = 0;
         List<PhotoFull> list1 = new ArrayList<>();
         while (true) {
             GetExtendedResponse resp = apiClient.
@@ -84,7 +104,7 @@ public class PhotoHandler {
         return list1;
     }
 
-    public List<PhotoFull> getAllExtended(int ownerId) throws Exception {
+    private List<PhotoFull> getAllExtended(int ownerId) throws Exception {
         List<PhotoAlbumFull> list1 = getAlbums(ownerId);
         sortAlbum(list1);
         List<PhotoAlbumFull> list2;
@@ -96,10 +116,43 @@ public class PhotoHandler {
         }
         List<PhotoFull> list3 = new ArrayList<>();
         for (PhotoAlbumFull a : list2) {
+            if (filtAlbum(a)) {
+                continue;
+            }
             list3.addAll(getExtended(a));
-            Thread.sleep(250);
+            if (list3.size() >= maxPhotoNum2) {
+                break;
+            }
+            Thread.sleep(200);
         }
         return list3;
+    }
+
+    private boolean filtAlbum(PhotoAlbumFull album) {
+        boolean filt = false;
+        if (album.getSize() == 0) {
+            return true;
+        }
+        String title = album.getTitle().toLowerCase();
+        List<String> list = new ArrayList<>();
+        list.add("победите");
+        list.add("розыгрыш");
+        list.add("девуш");
+        list.add("мисс");
+        list.add("girl");
+        list.add("boy");
+        list.add("гороско");
+        list.add("наши");
+        list.add("подписч");
+        list.add("cигн");
+        list.add("конкурс");
+        for (String s : list) {
+            if (title.contains(s.toLowerCase())) {
+                filt = true;
+                break;
+            }
+        }
+        return filt;
     }
 
     public List<PhotoFull> getAllSorted(int ownerId) throws Exception {
@@ -248,19 +301,45 @@ public class PhotoHandler {
             @Override
             public int compare(PhotoSizes photoSizes1, PhotoSizes photoSizes2) {
                 return getPhotoSizeMetric(photoSizes2) - getPhotoSizeMetric(photoSizes1);
+                //return getPhotoSizeMetric(photoSizes1) - getPhotoSizeMetric(photoSizes2);
             }
         });
     }
 
     public void deleteAllPhoto(int ownerId) throws Exception {
         List<PhotoAlbumFull> list1 = getAlbums(ownerId);
+        Thread.sleep(200);
+        if ((list1 == null) || list1.isEmpty()) {
+            return;
+        }
         List<PhotoFull> list2;
         for (PhotoAlbumFull a : list1) {
             list2 = getExtended(a);
+            if ((list2 == null) || list2.isEmpty()) {
+                continue;
+            }
+            Thread.sleep(200);
             for (PhotoFull p : list2) {
                 delete(p);
                 Thread.sleep(300);
             }
+        }
+    }
+
+    public void deleteAllPhoto2(int ownerId) throws Exception {
+        List<PhotoAlbumFull> list1 = getAlbums(ownerId);
+        if ((list1 == null) || list1.isEmpty()) {
+            return;
+        }
+        Thread.sleep(200);
+        for (PhotoAlbumFull a : list1) {
+            if (a.getTitle().equalsIgnoreCase("Основной альбом")) {
+                deleteAlbumPhoto(a);
+            }
+            else {
+                clearAlbumByDelete(a);
+            }
+            Thread.sleep(300);
         }
     }
 

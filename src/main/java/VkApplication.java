@@ -45,7 +45,7 @@ public class VkApplication {
         readProperties();
         authorization();
         Aggregator ag = new Aggregator(apiClient, userActor);
-        ag.aggregateGroups();
+        ag.aggregateContent();
         //PhotoHandler ph = new PhotoHandler(apiClient, userActor);
         //ph.photo3();
         //ph.photo1();

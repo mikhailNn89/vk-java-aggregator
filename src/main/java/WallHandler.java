@@ -2,7 +2,6 @@ import com.vk.api.sdk.client.VkApiClient;
 import com.vk.api.sdk.client.actors.UserActor;
 import com.vk.api.sdk.objects.base.responses.OkResponse;
 import com.vk.api.sdk.objects.photos.PhotoFull;
-import com.vk.api.sdk.objects.photos.PhotoFullXtrRealOffset;
 import com.vk.api.sdk.objects.wall.WallPostFull;
 import com.vk.api.sdk.objects.wall.responses.GetByIdExtendedResponse;
 import com.vk.api.sdk.objects.wall.responses.GetExtendedResponse;
@@ -18,7 +17,7 @@ import java.util.List;
 public class WallHandler {
     private VkApiClient apiClient;
     private UserActor userActor;
-    private static final int maxPostNum = 500;
+    private static final int maxPostNum = 200;
 
     WallHandler(VkApiClient apiClient, UserActor userActor) {
         this.apiClient = apiClient;
@@ -34,38 +33,53 @@ public class WallHandler {
         return (int)(Math.ceil(div));
     }
 
-    private void delete(int ownerId, int postId) throws Exception {
-        OkResponse ok = apiClient.wall().delete(userActor).ownerId(ownerId).postId(postId).execute();
-    }
-
     private void delete(WallPostFull post) throws Exception {
-        delete(post.getOwnerId(), post.getId());
+        OkResponse ok = apiClient.wall().delete(userActor).ownerId(post.getOwnerId()).postId(post.getId()).execute();
     }
 
-    private List<WallPostFull> getExtended(int ownerId) throws Exception {
-        GetExtendedResponse resp = apiClient.wall().getExtended(userActor).ownerId(ownerId).offset(0).count(100).filter(WallGetFilter.ALL).execute();
-        return resp.getItems();
+    public void clearWall(int ownerId) throws Exception {
+        List<WallPostFull> list = getExtended(ownerId);
+        if ((list == null) || list.isEmpty()) {
+            return;
+        }
+        for (WallPostFull p : list) {
+            delete(p);
+            Thread.sleep(300);
+        }
     }
 
-    public List<WallPostFull> getExtended2(int ownerId) throws Exception {
-        int offset = 0, count = 100;
-        int numIter = divCeil(maxPostNum, count), countIter = 0;
+    public List<WallPostFull> getExtended(int ownerId) throws Exception {
+        int offsetPost = 0, countPost = 100;
+        int numIter = divCeil(maxPostNum, countPost), countIter = 0;
         List<WallPostFull> list1 = new ArrayList<>();
         while (true) {
-            if (countIter >= numIter) {
-                break;
-            }
-            GetExtendedResponse resp = apiClient.wall().getExtended(userActor).ownerId(ownerId).offset(offset).count(count).filter(WallGetFilter.ALL).execute();
+            GetExtendedResponse resp = apiClient.
+                                          wall().
+                          getExtended(userActor).
+                                ownerId(ownerId).
+                              offset(offsetPost).
+                                count(countPost).
+                       filter(WallGetFilter.ALL).
+                                       execute();
             List<WallPostFull> list2 = resp.getItems();
-            if (list2 == null) {
+            if ((list2 == null) || list2.isEmpty()) {
                 break;
             }
             list1.addAll(list2);
-            offset += count;
+            offsetPost += countPost;
             countIter++;
-            Thread.sleep(500);
+            if ((list2.size() < countPost) || (countIter >= numIter)) {
+                break;
+            }
+            Thread.sleep(200);
         }
         return list1;
+    }
+
+    public List<WallPostFull> getAllSorted(int ownerId) throws Exception {
+        List<WallPostFull> list = getExtended(ownerId);
+        sortPost(list);
+        return list;
     }
 
     private WallPostFull getByIdExtended(int ownerId, int postId) throws Exception {
@@ -74,8 +88,8 @@ public class WallHandler {
         return resp.getItems().get(0);
     }
 
-    private void repost(int ownerId1, int postId, int ownerId2) throws Exception {
-        WallPostFull post = getByIdExtended(ownerId1, postId);
+    private void repost(WallPostFull post, int ownerId2) throws Exception {
+        int ownerId1 = post.getOwnerId(), postId = post.getId();
         String str = "wall" + ownerId1 + "_" + postId;
 
         String str1 = "Likes: " + post.getLikes().getCount();
@@ -90,41 +104,7 @@ public class WallHandler {
 
     public void repostList(List<WallPostFull> list, int ownerId2) throws Exception {
         for (WallPostFull p : list) {
-            repost(p.getOwnerId(), p.getId(), ownerId2);
-            Thread.sleep(500);
-        }
-    }
-
-    private void repost2(WallPostFull post, int ownerId2) throws Exception {
-        int ownerId1 = post.getOwnerId(), postId = post.getId();
-        String str = "wall" + ownerId1 + "_" + postId;
-
-        String str1 = "Likes: " + post.getLikes().getCount();
-        String str2 = "Comments: " + post.getComments().getCount();
-        String str3 = "Reposts: " + post.getReposts().getCount();
-        int sum = post.getLikes().getCount() + post.getComments().getCount() + post.getReposts().getCount();
-        String str4 = "Sum: " + sum;
-        String strFinal = str1 + "\n" + str2 + "\n" + str3 + "\n" + str4;
-
-        RepostResponse resp = apiClient.wall().repost(userActor, str).message(strFinal).groupId(abs(ownerId2)).execute();
-    }
-
-    public void repostList2(List<WallPostFull> list, int ownerId2) throws Exception {
-        for (WallPostFull p : list) {
-            repost2(p, ownerId2);
-            Thread.sleep(200);
-        }
-    }
-
-
-
-
-
-
-    public void clearWall(int ownerId) throws Exception {
-        List<WallPostFull> list = getExtended(ownerId);
-        for (WallPostFull p : list) {
-            delete(ownerId, p.getId());
+            repost(p, ownerId2);
             Thread.sleep(200);
         }
     }
@@ -141,18 +121,6 @@ public class WallHandler {
             }
         });
     }
-
-    public void sortPostRev(List<WallPostFull> list) {
-        Collections.sort(list, new Comparator<WallPostFull>() {
-            @Override
-            public int compare(WallPostFull post1, WallPostFull post2) {
-                return getPostMetric(post1) - getPostMetric(post2);
-            }
-        });
-    }
-
-
-
 
     public void clear() throws Exception {
         /*
@@ -199,5 +167,4 @@ public class WallHandler {
 
         int x = 3;
     }
-
 }
