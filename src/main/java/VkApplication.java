@@ -3,6 +3,7 @@ import com.vk.api.sdk.client.actors.GroupActor;
 import com.vk.api.sdk.client.actors.UserActor;
 import com.vk.api.sdk.httpclient.HttpTransportClient;
 import com.vk.api.sdk.objects.utils.DomainResolved;
+import org.eclipse.jetty.server.Server;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -45,7 +46,16 @@ public class VkApplication {
         readProperties();
         authorization();
         Aggregator ag = new Aggregator(apiClient, userActor);
-        ag.aggregateContent();
+        MessageBot mb = new MessageBot(apiClient, userActor, groupActor, properties.getProperty("confirmationCode"));
+        mb.setAggregator(ag);
+
+        int ass_port = Integer.valueOf(System.getenv("PORT"));
+        Server server = new Server(ass_port);
+        server.setHandler(mb);
+        server.start();
+        server.join();
+
+        //ag.aggregateContent();
         //PhotoHandler ph = new PhotoHandler(apiClient, userActor);
         //ph.photo3();
         //ph.photo1();

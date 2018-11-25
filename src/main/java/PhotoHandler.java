@@ -21,8 +21,8 @@ public class PhotoHandler {
     private VkApiClient apiClient;
     private UserActor userActor;
     private static final int maxPhotoNum1 = 1000;
-    private static final int maxPhotoNum2 = 2000;
-    private static final int maxAlbumNum = 30;
+    private static final int maxPhotoNum2 = 1000;
+    private static final int maxAlbumNum = 10;
 
     PhotoHandler(VkApiClient apiClient, UserActor userActor) {
         this.apiClient = apiClient;
@@ -243,11 +243,12 @@ public class PhotoHandler {
         boolean del = file.delete();
 
         String str1 = "Likes: " + photo.getLikes().getCount();
-        String str2 = "Comments: " + photo.getComments().getCount();
-        String str3 = "Reposts: " + photo.getReposts().getCount();
+        String str2 = "comments: " + photo.getComments().getCount();
+        String str3 = "reposts: " + photo.getReposts().getCount();
         int sum = photo.getLikes().getCount() + photo.getComments().getCount() + photo.getReposts().getCount();
-        String str4 = "Sum: " + sum;
-        String strFinal = str1 + "\n" + str2 + "\n" + str3 + "\n" + str4;
+        String str4 = "sum: " + sum;
+        //String strFinal = str1 + "\n" + str2 + "\n" + str3 + "\n" + str4;
+        String strFinal = str1 + ", " + str2 + ", " + str3 + ", " + str4;
 
         return save(ownerId, albumId, resp.getServer(), resp.getPhotosList(), resp.getHash(), strFinal);
     }

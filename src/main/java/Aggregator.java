@@ -1,5 +1,6 @@
 import com.vk.api.sdk.client.VkApiClient;
 import com.vk.api.sdk.client.actors.UserActor;
+import com.vk.api.sdk.exceptions.ApiException;
 import com.vk.api.sdk.objects.groups.GroupLink;
 import com.vk.api.sdk.objects.groups.LinksItem;
 import com.vk.api.sdk.objects.photos.Photo;
@@ -23,8 +24,8 @@ public class Aggregator {
     private WallHandler wallHandler;
     private LinkHandler linkHandler;
     private final static int myGroupId = -170303225;
-    private final static int numPostPerGroup = 2;
-    private final static int numPhotoPerGroup = 3;
+    private final static int numPostPerGroup = 3;
+    private final static int numPhotoPerGroup = 7;
 
     Aggregator(VkApiClient apiClient, UserActor userActor) {
         this.apiClient = apiClient;
@@ -123,6 +124,104 @@ public class Aggregator {
         return list1;
     }
 
+    private List<Integer> getIdList() throws Exception {
+        List<String> urlList = new ArrayList<>();
+        urlList.add("https://vk.com/public79858706");
+        urlList.add("https://vk.com/typical_nn");
+        urlList.add("https://vk.com/overhearnn");
+        Thread.sleep(300);
+        return getGroupIdList(urlList);
+    }
+
+    public void fillWall() {
+        try {
+            wallHandler.clearWall(myGroupId);
+            Thread.sleep(100);
+            List<Integer> idList = getIdList();
+            Thread.sleep(100);
+            List<WallPostFull> list2 = preparePost(idList);
+            Collections.reverse(list2);
+            Thread.sleep(100);
+            wallHandler.repostList(list2, myGroupId);
+            Thread.sleep(100);
+        } catch (Exception e) {
+            ;
+        }
+    }
+
+    public void fillPhoto() {
+        try {
+            photoHandler.deleteAllPhoto2(myGroupId);
+            Thread.sleep(100);
+            List<Integer> idList = getIdList();
+            Thread.sleep(100);
+
+            List<PhotoAlbumFull> albumList = new ArrayList<>();
+            albumList.add(getMainAlbum(myGroupId));
+            Thread.sleep(100);
+            albumList.add(getDelAlbum(myGroupId));
+            int albumId = albumList.get(0).getId();
+            PhotoUpload photoUpload = photoHandler.getUploadServer(myGroupId, albumId);
+            Thread.sleep(100);
+
+            List<PhotoFull> list1 = preparePhoto(idList);
+            Thread.sleep(100);
+            Collections.reverse(list1);
+
+            Thread.sleep(100);
+            List<Photo> lp = photoHandler.uploadPhotoList(list1, albumList.get(0), photoUpload, list1.get(list1.size()-1));
+            Thread.sleep(100);
+        } catch (Exception e) {
+            ;
+        }
+    }
+
+    public void fillLinks() {
+        try {
+            linkHandler.deleteAllLinks(myGroupId);
+            Thread.sleep(100);
+
+            List<String> urlList = new ArrayList<>();
+            urlList.add("https://vk.com/public79858706");
+            urlList.add("https://vk.com/typical_nn");
+            urlList.add("https://vk.com/overhearnn");
+            Thread.sleep(300);
+            List<Integer> idList = getGroupIdList(urlList);
+            Thread.sleep(100);
+            linkHandler.addLinkList(myGroupId, urlList);
+            Thread.sleep(100);
+        } catch (Exception e) {
+            ;
+        }
+    }
+
+    public void clearWall() {
+        try {
+            wallHandler.clearWall(myGroupId);
+            Thread.sleep(100);
+        } catch (Exception e) {
+            ;
+        }
+    }
+
+    public void clearPhoto() {
+        try {
+            photoHandler.deleteAllPhoto2(myGroupId);
+            Thread.sleep(100);
+        } catch (Exception e) {
+            ;
+        }
+    }
+
+    public void clearLinks() {
+        try {
+            linkHandler.deleteAllLinks(myGroupId);
+            Thread.sleep(100);
+        } catch (Exception e) {
+            ;
+        }
+    }
+
     public void aggregateContent() throws Exception {
         photoHandler.deleteAllPhoto2(myGroupId);
         Thread.sleep(100);
@@ -159,23 +258,7 @@ public class Aggregator {
         List<Photo> lp = photoHandler.uploadPhotoList(list1, albumList.get(0), photoUpload, list1.get(list1.size()-1));
         Thread.sleep(100);
         wallHandler.repostList(list2, myGroupId);
-
-        Thread.sleep(100);
-        photoHandler.movePhotoList(lp, albumList.get(1));
-
-        Thread.sleep(100);
-        photoHandler.deleteAllPhoto2(myGroupId);
-        Thread.sleep(100);
-        wallHandler.clearWall(myGroupId);
-        Thread.sleep(100);
-        linkHandler.deleteAllLinks(myGroupId);
-
-        int y = 5;
     }
-
-
-
-
 
     public void aggregateGroups2() throws Exception {
 

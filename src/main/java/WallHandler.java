@@ -17,7 +17,7 @@ import java.util.List;
 public class WallHandler {
     private VkApiClient apiClient;
     private UserActor userActor;
-    private static final int maxPostNum = 200;
+    private static final int maxPostNum = 150;
 
     WallHandler(VkApiClient apiClient, UserActor userActor) {
         this.apiClient = apiClient;
@@ -93,11 +93,12 @@ public class WallHandler {
         String str = "wall" + ownerId1 + "_" + postId;
 
         String str1 = "Likes: " + post.getLikes().getCount();
-        String str2 = "Comments: " + post.getComments().getCount();
-        String str3 = "Reposts: " + post.getReposts().getCount();
+        String str2 = "comments: " + post.getComments().getCount();
+        String str3 = "reposts: " + post.getReposts().getCount();
         int sum = post.getLikes().getCount() + post.getComments().getCount() + post.getReposts().getCount();
-        String str4 = "Sum: " + sum;
-        String strFinal = str1 + "\n" + str2 + "\n" + str3 + "\n" + str4;
+        String str4 = "sum: " + sum;
+        //String strFinal = str1 + "\n" + str2 + "\n" + str3 + "\n" + str4;
+        String strFinal = str1 + ", " + str2 + ", " + str3 + ", " + str4;
 
         RepostResponse resp = apiClient.wall().repost(userActor, str).message(strFinal).groupId(abs(ownerId2)).execute();
     }
