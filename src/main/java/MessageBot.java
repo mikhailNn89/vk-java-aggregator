@@ -4,13 +4,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.vk.api.sdk.client.VkApiClient;
 import com.vk.api.sdk.client.actors.GroupActor;
-import com.vk.api.sdk.client.actors.UserActor;
 import com.vk.api.sdk.exceptions.ApiException;
 import com.vk.api.sdk.exceptions.ClientException;
+import com.vk.api.sdk.objects.base.responses.OkResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -22,10 +20,9 @@ import java.util.Random;
 
 public class MessageBot extends AbstractHandler {
     private VkApiClient apiClient;
-    private UserActor userActor;
     private GroupActor groupActor;
     private Aggregator aggregator;
-    private final static int adminId = 431432761;
+    private int adminId;
 
     private final Random random = new Random();
     private final static String CONFIRMATION_TYPE = "confirmation";
@@ -35,16 +32,68 @@ public class MessageBot extends AbstractHandler {
     private final Gson gson;
     private ArrayList<JsonObject> objList;
 
-    MessageBot(VkApiClient apiClient, UserActor userActor, GroupActor groupActor, String confirmationCode) {
+    MessageBot(VkApiClient apiClient,
+               GroupActor groupActor,
+               int adminId,
+               String confirmationCode,
+               int serverId) {
         this.apiClient = apiClient;
-        this.userActor = userActor;
         this.groupActor = groupActor;
+        this.adminId = adminId;
         this.confirmationCode = confirmationCode;
         this.gson = new GsonBuilder().create();
         this.objList = new ArrayList<>();
+        try {
+            setCallbackSettings(serverId);
+        } catch (Exception e) {
+            ;
+        }
     }
 
     public void setAggregator(Aggregator aggregator) { this.aggregator = aggregator; }
+
+    private void setCallbackSettings(int serverId) throws Exception {
+        OkResponse ok = apiClient.
+                         groups().
+setCallbackSettings(groupActor, serverId).
+                 messageNew(true).
+              messageReply(false).
+              messageAllow(false).
+               messageDeny(false).
+               messageEdit(false).
+                  photoNew(false).
+                  audioNew(false).
+                  videoNew(false).
+              wallReplyNew(false).
+             wallReplyEdit(false).
+           wallReplyDelete(false).
+   	      wallReplyRestore(false).
+               wallPostNew(false).
+                wallRepost(false).
+              boardPostNew(false).
+             boardPostEdit(false).
+          boardPostRestore(false).
+           boardPostDelete(false).
+           photoCommentNew(false).
+          photoCommentEdit(false).
+        photoCommentDelete(false).
+       photoCommentRestore(false).
+           videoCommentNew(false).
+          videoCommentEdit(false).
+        videoCommentDelete(false).
+       videoCommentRestore(false).
+          marketCommentNew(false).
+         marketCommentEdit(false).
+       marketCommentDelete(false).
+      marketCommentRestore(false).
+               pollVoteNew(false).
+                 groupJoin(false).
+                groupLeave(false).
+       groupChangeSettings(false).
+          groupChangePhoto(false).
+		 groupOfficersEdit(false).
+				        execute();
+    }
 
     public void handle(String target,
                        Request baseRequest,
@@ -58,16 +107,15 @@ public class MessageBot extends AbstractHandler {
             String type = requestJson.get("type").getAsString();
             if (type == null || type.isEmpty()) throw new ServletException("No type in json");
 
-            final String responseBody;
             switch (type) {
                 case CONFIRMATION_TYPE:
                     sendResponse(confirmationCode, baseRequest, response);
                     break;
                 case MESSAGE_TYPE:
-                    sendResponse(OK_BODY, baseRequest, response);
                     JsonObject object = requestJson.getAsJsonObject("object");
-                    handleMessage(object);
                     objList.add(object);
+                    sendResponse(OK_BODY, baseRequest, response);
+                    handleMessage(object);
                     break;
                 default:
                     sendResponse(OK_BODY, baseRequest, response);
@@ -78,10 +126,10 @@ public class MessageBot extends AbstractHandler {
         }
     }
 
-    private void sendResponse(String responseBody,
-                                Request baseRequest,
-                                HttpServletResponse response)
-            throws IOException, ServletException {
+    private static void sendResponse(String responseBody,
+                                     Request baseRequest,
+                                     HttpServletResponse response)
+            throws IOException {
         response.setContentType("text/html;charset=utf-8");
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);
@@ -90,7 +138,7 @@ public class MessageBot extends AbstractHandler {
 
     private void sendMessage(int userId, String str) {
         try {
-            apiClient.messages().send(groupActor).message(str).userId(userId).randomId(random.nextInt()).execute();
+            int res = apiClient.messages().send(groupActor).message(str).userId(userId).randomId(random.nextInt()).execute();
         } catch (ApiException e) {
             ;
         } catch (ClientException e) {
@@ -99,7 +147,13 @@ public class MessageBot extends AbstractHandler {
     }
 
     private void handleMessage(JsonObject object) {
-        if (objList.contains(object)) {
+        int count = 0;
+        for (JsonObject o : objList) {
+            if (o.equals(object)) {
+                count++;
+            }
+        }
+        if (count != 1) {
             return;
         }
 
@@ -110,8 +164,8 @@ public class MessageBot extends AbstractHandler {
         }
 
         sendMessage(userId, "Hello admin.");
-        //sendMessage(userId, object.toString());
         String text = object.getAsJsonPrimitive("text").getAsString();
+        text = text.trim();
         switch (text) {
             case "#fw":
                 aggregator.fillWall();
@@ -138,7 +192,15 @@ public class MessageBot extends AbstractHandler {
                 sendMessage(userId,"Links are cleared.");
                 break;
             default:
-                sendMessage(userId,"Command isn't supported.");
+                String[] split = text.split("#sg");
+                if (split.length == 2) {
+                    int grVar = Integer.parseInt(split[split.length-1].trim());
+                    aggregator.setGroupsVar(grVar);
+                    sendMessage(userId,"Variant #"+grVar+" is selected.");
+                }
+                else {
+                    sendMessage(userId, "Command isn't supported.");
+                }
                 break;
         }
     }
