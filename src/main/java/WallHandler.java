@@ -16,6 +16,8 @@ public class WallHandler {
     private VkApiClient apiClient;
     private UserActor userActor;
     private int maxNumPost;
+    private final static long cycleDelay = 250;
+    private final static long intermDelay = 100;
 
     WallHandler(VkApiClient apiClient,
                 UserActor userActor,
@@ -41,9 +43,10 @@ public class WallHandler {
         if ((list == null) || list.isEmpty()) {
             return;
         }
+        Thread.sleep(intermDelay);
         for (WallPostFull p : list) {
             delete(p);
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
     }
 
@@ -70,7 +73,7 @@ public class WallHandler {
             if ((list2.size() < countPost) || (countIter >= numIter)) {
                 break;
             }
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
         return list1;
     }
@@ -105,7 +108,7 @@ public class WallHandler {
     public void repostList(List<WallPostFull> list, int groupId2) throws Exception {
         for (WallPostFull p : list) {
             repost(p, groupId2);
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
     }
 

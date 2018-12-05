@@ -22,6 +22,8 @@ public class PhotoHandler {
     private int maxNumPhoto1;
     private int maxNumPhoto2;
     private int maxNumAlbum;
+    private final static long cycleDelay = 250;
+    private final static long intermDelay = 100;
 
     PhotoHandler(VkApiClient apiClient,
                  UserActor userActor,
@@ -52,7 +54,7 @@ public class PhotoHandler {
       deleteAlbum(userActor, album.getId()).
       groupId(abs(album.getOwnerId())).
                         execute();
-        Thread.sleep(200);
+        Thread.sleep(intermDelay);
         PhotoAlbumFull albumNew = apiClient.
                                    photos().
    createAlbum(userActor, album.getTitle()).
@@ -85,7 +87,7 @@ public class PhotoHandler {
     public void movePhotoList(List<Photo> list, PhotoAlbumFull album) throws Exception {
         for (Photo p : list) {
             OkResponse ok = apiClient.photos().move(userActor, album.getId(), p.getId()).ownerId(p.getOwnerId()).execute();
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
     }
 
@@ -116,7 +118,7 @@ public class PhotoHandler {
             if ((list2.size() < countPhoto) || (countIter >= numIter)) {
                 break;
             }
-            Thread.sleep(250);
+            Thread.sleep(cycleDelay);
         }
         return list1;
     }
@@ -131,7 +133,7 @@ public class PhotoHandler {
         else {
             list2 = list1.subList(0,maxNumAlbum);
         }
-        Thread.sleep(100);
+        Thread.sleep(intermDelay);
         List<PhotoFull> list3 = new ArrayList<>();
         for (PhotoAlbumFull a : list2) {
             if (filtAlbum(a)) {
@@ -141,7 +143,7 @@ public class PhotoHandler {
             if (list3.size() >= maxNumPhoto2) {
                 break;
             }
-            Thread.sleep(250);
+            Thread.sleep(cycleDelay);
         }
         return list3;
     }
@@ -169,6 +171,9 @@ public class PhotoHandler {
         list.add("барахолка");
         list.add("дети");
         list.add("детск");
+        list.add("без");
+        list.add(".");
+        list.add("основн");
         for (String s : list) {
             if (title.contains(s.toLowerCase())) {
                 filt = true;
@@ -263,7 +268,7 @@ public class PhotoHandler {
         File file = new File(photoName);
         PhotoUploadResponse resp = upload(file, photoUpload.getUploadUrl());
         boolean del = file.delete();
-        Thread.sleep(100);
+        Thread.sleep(intermDelay);
 
         String str1 = "likes: " + photo.getLikes().getCount();
         String str2 = "comments: " + photo.getComments().getCount();
@@ -282,11 +287,11 @@ public class PhotoHandler {
         for (PhotoFull p : list1) {
             list2.add(uploadPhoto(p, groupId, albumId, photoUpload));
             if ((photoCover != null) && (photoCover == p)) {
-                Thread.sleep(200);
+                Thread.sleep(cycleDelay);
                 Photo p1 = list2.get(list2.size()-1);
                 makeCover(p1.getOwnerId(), p1.getAlbumId(), p1.getId());
             }
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
         return list2;
     }
@@ -335,7 +340,7 @@ public class PhotoHandler {
         if ((list1 == null) || list1.isEmpty()) {
             return;
         }
-        Thread.sleep(200);
+        Thread.sleep(intermDelay);
         List<PhotoFull> list2;
         for (PhotoAlbumFull a : list1) {
             if (a.getSize() == 0) {
@@ -343,12 +348,13 @@ public class PhotoHandler {
             }
             list2 = getExtended(a);
             if ((list2 == null) || list2.isEmpty()) {
+                Thread.sleep(cycleDelay);
                 continue;
             }
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
             for (PhotoFull p : list2) {
                 delete(p);
-                Thread.sleep(200);
+                Thread.sleep(cycleDelay);
             }
         }
     }
@@ -358,7 +364,7 @@ public class PhotoHandler {
         if ((list1 == null) || list1.isEmpty()) {
             return;
         }
-        Thread.sleep(200);
+        Thread.sleep(intermDelay);
         for (PhotoAlbumFull a : list1) {
             if (a.getSize() == 0) {
                 continue;
@@ -369,16 +375,16 @@ public class PhotoHandler {
             else {
                 clearAlbumByDelete(a);
             }
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
     }
 
     private void deleteAlbumPhoto(PhotoAlbumFull album) throws Exception {
         List<PhotoFull> list = getExtended(album);
-        Thread.sleep(200);
+        Thread.sleep(intermDelay);
         for (PhotoFull p : list) {
             delete(p);
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
     }
 }

@@ -12,6 +12,8 @@ import java.util.List;
 public class LinkHandler {
     private VkApiClient apiClient;
     private UserActor userActor;
+    private final static long cycleDelay = 250;
+    private final static long intermDelay = 100;
 
     LinkHandler(VkApiClient apiClient, UserActor userActor) {
         this.apiClient = apiClient;
@@ -37,10 +39,10 @@ public class LinkHandler {
         if ((list == null) || list.isEmpty()) {
             return;
         }
-        Thread.sleep(200);
+        Thread.sleep(intermDelay);
         for (LinksItem l : list) {
             deleteLink(groupId, l);
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
     }
 
@@ -53,7 +55,7 @@ public class LinkHandler {
         List<GroupLink> list = new ArrayList<>();
         for (String s : linkList) {
             list.add(addLink(groupId, s, ""));
-            Thread.sleep(200);
+            Thread.sleep(cycleDelay);
         }
         return list;
     }

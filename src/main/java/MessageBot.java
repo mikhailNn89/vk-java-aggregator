@@ -23,6 +23,7 @@ public class MessageBot extends AbstractHandler {
     private GroupActor groupActor;
     private Aggregator aggregator;
     private int adminId;
+    private final static long intermDelay = 100;
 
     private final Random random = new Random();
     private final static String CONFIRMATION_TYPE = "confirmation";
@@ -45,6 +46,7 @@ public class MessageBot extends AbstractHandler {
         this.objList = new ArrayList<>();
         try {
             setCallbackSettings(serverId);
+            Thread.sleep(intermDelay);
         } catch (Exception e) {
             ;
         }
@@ -115,7 +117,11 @@ setCallbackSettings(groupActor, serverId).
                     JsonObject object = requestJson.getAsJsonObject("object");
                     objList.add(object);
                     sendResponse(OK_BODY, baseRequest, response);
-                    handleMessage(object);
+                    try {
+                        handleMessage(object);
+                    } catch (Exception e) {
+                        ;
+                    }
                     break;
                 default:
                     sendResponse(OK_BODY, baseRequest, response);
@@ -146,7 +152,7 @@ setCallbackSettings(groupActor, serverId).
         }
     }
 
-    private void handleMessage(JsonObject object) {
+    private void handleMessage(JsonObject object) throws Exception {
         int count = 0;
         for (JsonObject o : objList) {
             if (o.equals(object)) {
@@ -166,29 +172,36 @@ setCallbackSettings(groupActor, serverId).
         sendMessage(userId, "Hello admin.");
         String text = object.getAsJsonPrimitive("text").getAsString();
         text = text.trim();
+        Thread.sleep(intermDelay);
         switch (text) {
             case "#fw":
                 aggregator.fillWall();
+                Thread.sleep(intermDelay);
                 sendMessage(userId,"Wall is filled.");
                 break;
             case "#fp":
                 aggregator.fillPhoto();
+                Thread.sleep(intermDelay);
                 sendMessage(userId,"Photos are filled.");
                 break;
             case "#fl":
                 aggregator.fillLinks();
+                Thread.sleep(intermDelay);
                 sendMessage(userId,"Links are filled.");
                 break;
             case "#cw":
                 aggregator.clearWall();
+                Thread.sleep(intermDelay);
                 sendMessage(userId,"Wall is cleared.");
                 break;
             case "#cp":
                 aggregator.clearPhoto();
+                Thread.sleep(intermDelay);
                 sendMessage(userId,"Photos are cleared.");
                 break;
             case "#cl":
                 aggregator.clearLinks();
+                Thread.sleep(intermDelay);
                 sendMessage(userId,"Links are cleared.");
                 break;
             default:
